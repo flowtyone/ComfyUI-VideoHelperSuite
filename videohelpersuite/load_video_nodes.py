@@ -106,12 +106,13 @@ class LoadVideoUpload:
     @classmethod
     def INPUT_TYPES(s):
         input_dir = folder_paths.get_input_directory()
-        files = []
-        for f in os.listdir(input_dir):
-            if os.path.isfile(os.path.join(input_dir, f)):
-                file_parts = f.split('.')
-                if len(file_parts) > 1 and (file_parts[-1] in video_extensions):
-                    files.append(f)
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        # files = []
+        # for f in os.listdir(input_dir):
+        #     if os.path.isfile(os.path.join(input_dir, f)):
+        #         file_parts = f.split('.')
+        #         if len(file_parts) > 1 and (file_parts[-1] in video_extensions):
+        #             files.append(f)
         return {"required": {
                     "video": (sorted(files), {"video_upload": True}),
                      "force_rate": ("INT", {"default": 0, "min": 0, "max": 24, "step": 1}),
@@ -149,9 +150,11 @@ class LoadVideoUpload:
 class LoadVideoPath:
     @classmethod
     def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
         return {
             "required": {
-                "video": ("STRING", {"default": "X://insert/path/here.mp4"}),
+                "video": (sorted(files),),
                 "force_rate": ("INT", {"default": 0, "min": 0, "max": 24, "step": 1}),
                 "force_size": (["Disabled", "256x?", "?x256", "256x256", "512x?", "?x512", "512x512"],),
                 "frame_load_cap": ("INT", {"default": 0, "min": 0, "step": 1}),

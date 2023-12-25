@@ -39,6 +39,8 @@ if "VHS_PREFERRED_BACKEND" in os.environ:
 class VideoCombine:
     @classmethod
     def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        input_files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
         #Hide ffmpeg formats if ffmpeg isn't available
         if ffmpeg_path is not None:
             ffmpeg_formats = ["video/"+x[:-5] for x in folder_paths.get_filename_list("video_formats")]
@@ -60,7 +62,7 @@ class VideoCombine:
             },
             "optional": {
                 "save_metadata": ("BOOLEAN", {"default": True}),
-                "audio_file": ("STRING", {"default": ""}),
+                "audio_file": (input_files,),
             },
             "hidden": {
                 "prompt": "PROMPT",

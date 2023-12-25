@@ -78,10 +78,11 @@ class LoadImagesFromDirectoryUpload:
     @classmethod
     def INPUT_TYPES(s):
         input_dir = folder_paths.get_input_directory()
-        directories = []
-        for item in os.listdir(input_dir):
-            if not os.path.isfile(os.path.join(input_dir, item)) and item != "clipspace":
-                directories.append(item)
+        directories = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        # directories = []
+        # for item in os.listdir(input_dir):
+        #     if not os.path.isfile(os.path.join(input_dir, item)) and item != "clipspace":
+        #         directories.append(item)
         return {
             "required": {
                 "directory": (directories,),
@@ -116,9 +117,11 @@ class LoadImagesFromDirectoryUpload:
 class LoadImagesFromDirectoryPath:
     @classmethod
     def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        directories = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
         return {
             "required": {
-                "directory": ("STRING", {"default": "X://path/to/images"}),
+                "directory": (directories,),
             },
             "optional": {
                 "image_load_cap": ("INT", {"default": 0, "min": 0, "step": 1}),
