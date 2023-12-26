@@ -157,7 +157,8 @@ async function uploadFile(file) {
         });
 
         if (resp.status === 200) {
-            return resp.status
+            return (await resp.json())
+            //return resp.status
         } else {
             alert(resp.status + " - " + resp.statusText);
         }
@@ -325,7 +326,7 @@ function addUploadWidget(nodeType, nodeData, widgetName, type="video") {
                     }
                     let successes = 0;
                     for(const file of fileInput.files) {
-                        if (await uploadFile(file) == 200) {
+                        if (await uploadFile(file)) {
                             successes++;
                         } else {
                             //Upload failed, but some prior uploads may have succeeded
@@ -349,11 +350,12 @@ function addUploadWidget(nodeType, nodeData, widgetName, type="video") {
                 style: "display: none",
                 onchange: async () => {
                     if (fileInput.files.length) {
-                        if (await uploadFile(fileInput.files[0]) != 200) {
+                        let uploaded = await uploadFile(fileInput.files[0]);
+                        if (!uploaded) {
                             //upload failed and file can not be added to options
                             return;
                         }
-                        const filename = fileInput.files[0].name;
+                        const filename = (uploaded.subfolder ? (uploaded.subfolder + "/") : "") + uploaded.name//fileInput.files[0].name;
                         pathWidget.options.values.push(filename);
                         pathWidget.value = filename;
                     }
