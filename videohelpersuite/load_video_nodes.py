@@ -182,6 +182,6 @@ class LoadVideoPath:
 
     @classmethod
     def VALIDATE_INPUTS(s, video, **kwargs):
-        if not os.path.isfile(video.strip("\"")):
+        if not folder_paths.get_annotated_filepath(video):
             return "Invalid video file: {}".format(video)
         return True

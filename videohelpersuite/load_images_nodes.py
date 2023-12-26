@@ -136,12 +136,15 @@ class LoadImagesFromDirectoryPath:
     CATEGORY = "Video Helper Suite 🎥🅥🅗🅢"
 
     def load_images(self, directory: str, **kwargs):
+        directory = folder_paths.get_annotated_filepath(directory.strip())
         return load_images(directory, **kwargs)
     
     @classmethod
     def IS_CHANGED(s, directory: str, **kwargs):
+        directory = folder_paths.get_annotated_filepath(directory.strip())
         return is_changed_load_images(directory, **kwargs)
 
     @classmethod
     def VALIDATE_INPUTS(s, directory: str, **kwargs):
+        directory = folder_paths.get_annotated_filepath(directory.strip())
         return validate_load_images(directory, **kwargs)
