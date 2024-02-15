@@ -202,8 +202,7 @@ class LoadVideoPath:
         files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
         return {
             "required": {
-
-                "video": ("STRING", {"default": "X://insert/path/here.mp4", "vhs_path_extensions": video_extensions}),
+                "video": (sorted(files),),
                 "force_rate": ("INT", {"default": 0, "min": 0, "max": 60, "step": 1}),
                  "force_size": (["Disabled", "Custom Height", "Custom Width", "Custom", "256x?", "?x256", "256x256", "512x?", "?x512", "512x512"],),
                  "custom_width": ("INT", {"default": 512, "min": 0, "max": DIMMAX, "step": 8}),
@@ -227,8 +226,9 @@ class LoadVideoPath:
     FUNCTION = "load_video"
 
     def load_video(self, **kwargs):
-        if kwargs['video'] is None or validate_path(kwargs['video']) != True:
+        if kwargs['video'] is None: #or validate_path(kwargs['video']) != True:
             raise Exception("video is not a valid path: " + kwargs['video'])
+        kwargs["video"] = folder_paths.get_annotated_filepath(kwargs["video"].strip("\""))
         return load_video_cv(**kwargs)
 
     @classmethod

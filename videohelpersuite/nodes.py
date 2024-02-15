@@ -16,7 +16,7 @@ from .image_latent_nodes import *
 from .load_video_nodes import LoadVideoUpload, LoadVideoPath
 from .load_images_nodes import LoadImagesFromDirectoryUpload, LoadImagesFromDirectoryPath
 from .batched_nodes import VAEEncodeBatched, VAEDecodeBatched
-from .utils import ffmpeg_path, get_audio, hash_path, validate_path, requeue_workflow, gifski_path
+from .utils import ffmpeg_path, get_audio, hash_path, gifski_path
 
 folder_paths.folder_names_and_paths["VHS_video_formats"] = (
     [
@@ -152,8 +152,8 @@ def ffmpeg_process(args, video_format, video_metadata, file_path, env):
 class VideoCombine:
     @classmethod
     def INPUT_TYPES(s):
-        input_dir = folder_paths.get_input_directory()
-        input_files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        #input_dir = folder_paths.get_input_directory()
+        #input_files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
         #Hide ffmpeg formats if ffmpeg isn't available
         if ffmpeg_path is not None:
             ffmpeg_formats = get_video_formats()
@@ -358,8 +358,8 @@ class VideoCombine:
                     batch_manager.outputs[unique_id] = (counter, output_process)
 
             output_process.send(images.tobytes())
-            if batch_manager is not None:
-                requeue_workflow((batch_manager.unique_id, not batch_manager.has_closed_inputs))
+            # if batch_manager is not None:
+            #     requeue_workflow((batch_manager.unique_id, not batch_manager.has_closed_inputs))
             if batch_manager is None or batch_manager.has_closed_inputs:
                 #Close pipe and wait for termination.
                 try:
@@ -442,9 +442,11 @@ class LoadAudio:
     @classmethod
     def INPUT_TYPES(s):
         #Hide ffmpeg formats if ffmpeg isn't available
+        input_dir = folder_paths.get_input_directory()
+        input_files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
         return {
             "required": {
-                "audio_file": ("STRING", {"default": "input/", "vhs_path_extensions": ['wav','mp3','ogg','m4a','flac']}),
+                "audio_file": (sorted(input_files),),
                 },
             "optional" : {"seek_seconds": ("FLOAT", {"default": 0, "min": 0})}
         }
@@ -454,10 +456,11 @@ class LoadAudio:
     CATEGORY = "Video Helper Suite 🎥🅥🅗🅢"
     FUNCTION = "load_audio"
     def load_audio(self, audio_file, seek_seconds):
-        if audio_file is None or validate_path(audio_file) != True:
+        if audio_file is None: #or validate_path(audio_file) != True:
             raise Exception("audio_file is not a valid path: " + audio_file)
         #Eagerly fetch the audio since the user must be using it if the
         #node executes, unlike Load Video
+        audio_file = folder_paths.get_annotated_filepath(audio_file)
         audio = get_audio(audio_file, start_time=seek_seconds)
         return (lambda : audio,)
 
@@ -467,7 +470,9 @@ class LoadAudio:
 
     @classmethod
     def VALIDATE_INPUTS(s, audio_file, **kwargs):
-        return validate_path(audio_file, allow_none=True)
+        if not folder_paths.get_annotated_filepath(audio_file):
+            return "Invalid audio file: {}".format(audio_file)
+        return True
 
 class PruneOutputs:
     @classmethod
