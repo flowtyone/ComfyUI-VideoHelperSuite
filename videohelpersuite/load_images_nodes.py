@@ -7,7 +7,7 @@ from PIL import Image, ImageOps
 import folder_paths
 from comfy.k_diffusion.utils import FolderOfImages
 from .logger import logger
-from .utils import calculate_file_hash, get_sorted_dir_files_from_directory
+from .utils import BIGMAX, calculate_file_hash, get_sorted_dir_files_from_directory, validate_path
 
 
 def is_changed_load_images(directory: str, image_load_cap: int = 0, skip_first_images: int = 0, select_every_nth: int = 1):
@@ -15,7 +15,8 @@ def is_changed_load_images(directory: str, image_load_cap: int = 0, skip_first_i
             return False
         
     dir_files = get_sorted_dir_files_from_directory(directory, skip_first_images, select_every_nth, FolderOfImages.IMG_EXTENSIONS)
-    dir_files = dir_files[:image_load_cap]
+    if image_load_cap != 0:
+        dir_files = dir_files[:image_load_cap]
 
     m = hashlib.sha256()
     for filepath in dir_files:
@@ -23,7 +24,7 @@ def is_changed_load_images(directory: str, image_load_cap: int = 0, skip_first_i
     return m.digest().hex()
 
 
-def validate_load_images(directory: str, **kwargs):
+def validate_load_images(directory: str):
     if not os.path.isdir(directory):
             return f"Directory '{directory}' cannot be found."
     dir_files = os.listdir(directory)
@@ -34,7 +35,6 @@ def validate_load_images(directory: str, **kwargs):
 
 
 def load_images(directory: str, image_load_cap: int = 0, skip_first_images: int = 0, select_every_nth: int = 1):
-    directory = folder_paths.get_annotated_filepath(directory.strip())
     if not os.path.isdir(directory):
         raise FileNotFoundError(f"Directory '{directory} cannot be found.")
 
@@ -50,6 +50,8 @@ def load_images(directory: str, image_load_cap: int = 0, skip_first_images: int 
     if image_load_cap > 0:
         limit_images = True
     image_count = 0
+    loaded_alpha = False
+    zero_mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
 
     for image_path in dir_files:
         if limit_images and image_count >= image_load_cap:
@@ -62,8 +64,12 @@ def load_images(directory: str, image_load_cap: int = 0, skip_first_images: int 
         if 'A' in i.getbands():
             mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
             mask = 1. - torch.from_numpy(mask)
+            if not loaded_alpha:
+                loaded_alpha = True
+                zero_mask = torch.zeros((len(image[0]),len(image[0][0])), dtype=torch.float32, device="cpu")
+                masks = [zero_mask] * image_count
         else:
-            mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+            mask = zero_mask
         images.append(image)
         masks.append(mask)
         image_count += 1
@@ -88,9 +94,9 @@ class LoadImagesFromDirectoryUpload:
                 "directory": (directories,),
             },
             "optional": {
-                "image_load_cap": ("INT", {"default": 0, "min": 0, "step": 1}),
-                "skip_first_images": ("INT", {"default": 0, "min": 0, "step": 1}),
-                "select_every_nth": ("INT", {"default": 1, "min": 1, "step": 1}),
+                "image_load_cap": ("INT", {"default": 0, "min": 0, "max": BIGMAX, "step": 1}),
+                "skip_first_images": ("INT", {"default": 0, "min": 0, "max": BIGMAX, "step": 1}),
+                "select_every_nth": ("INT", {"default": 1, "min": 1, "max": BIGMAX, "step": 1}),
             }
         }
     
@@ -111,7 +117,7 @@ class LoadImagesFromDirectoryUpload:
     @classmethod
     def VALIDATE_INPUTS(s, directory: str, **kwargs):
         directory = folder_paths.get_annotated_filepath(directory.strip())
-        return validate_load_images(directory, **kwargs)
+        return validate_load_images(directory)
 
 
 class LoadImagesFromDirectoryPath:
@@ -124,9 +130,9 @@ class LoadImagesFromDirectoryPath:
                 "directory": (directories,),
             },
             "optional": {
-                "image_load_cap": ("INT", {"default": 0, "min": 0, "step": 1}),
-                "skip_first_images": ("INT", {"default": 0, "min": 0, "step": 1}),
-                "select_every_nth": ("INT", {"default": 1, "min": 1, "step": 1}),
+                "image_load_cap": ("INT", {"default": 0, "min": 0, "max": BIGMAX, "step": 1}),
+                "skip_first_images": ("INT", {"default": 0, "min": 0, "max": BIGMAX, "step": 1}),
+                "select_every_nth": ("INT", {"default": 1, "min": 1, "max": BIGMAX, "step": 1}),
             }
         }
     
